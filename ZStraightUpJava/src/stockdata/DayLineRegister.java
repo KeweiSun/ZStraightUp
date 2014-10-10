@@ -37,21 +37,9 @@ public class DayLineRegister {
 		return dayLineRegister;
 	}
 	
-	
-	
-	
-	private void outputStringToFile(String content, String filename){
-		try {
-			PrintWriter out1 = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
-			out1.print(content);
-			out1.close();
-		} catch (EOFException e) {
-			System.err.println("End of stream");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
+	///////////////////////
+	//Read Day Lines from Files 
+	//////////////////////
 	private static ArrayList<DayLine> getDayLineListByFile(File dayLineFile){
 		ArrayList<DayLine> result = new ArrayList<DayLine>();
 		if(dayLineFile.isDirectory()){
@@ -124,27 +112,9 @@ public class DayLineRegister {
 		System.out.println();
 	}
 	
-	public String loadFromFile(String filename){
-		StringBuffer result = new StringBuffer();
-		try {
-			BufferedReader in = new BufferedReader(new FileReader(filename));
-				    String s = new String();
-				    while((s = in.readLine())!= null){
-				    	//result = result+s;
-				    	result.append(s);
-				    }
-				    in.close();
-		    } catch (IOException e) {
-				e.printStackTrace();
-			}
-		return result.toString();
-	}
-	
-	public synchronized void appendBuffer(StringBuffer totalBuffer, String tdString){
-		totalBuffer.append(tdString);
-	}
-	
-	
+	///////////////////////
+	//Update DayLines Through Web
+	//////////////////////
 	
 	private ArrayList<String> getUrlList(){
 		ArrayList<String> result = new ArrayList<String>();
@@ -168,6 +138,7 @@ public class DayLineRegister {
 		
 		return result;
 	}
+	
 	private ArrayList<String> getContentFromUrl(String url) throws IOException{
 		ArrayList<String> result = new ArrayList<String>();
 		URL getUrl = new URL(url);
@@ -185,6 +156,7 @@ public class DayLineRegister {
 		
 		
 	}
+	
 	private void getCurrentDayLine(String lines){
 		 String[] titledata = lines.split("=\"");
          String title = titledata[0];
@@ -237,6 +209,7 @@ public class DayLineRegister {
      		 dayLines.add(dl);
      	 }
 	}
+	
 	private double getRate(int hour, int min){
 		
 		if(hour<12){
@@ -255,7 +228,7 @@ public class DayLineRegister {
         }
        return rate;
 	}
-	
+
 	public void refreshDayLineDictionary() {	
 		try {
 			ArrayList<String> urlList = this.getUrlList();
@@ -274,28 +247,67 @@ public class DayLineRegister {
 		}
 	}
 	
-	private void enhanceChoosen(Judger judger, boolean isProbabilityChoosen){
-		
+	
+	///////////////////////
+	// Enhance Day Lines
+	//////////////////////
+	private double variance(ArrayList<DayLine> list){
+		int size = list.size();
+		float average = 0;
+		for(DayLine dl: list){
+			average = average +dl.todayIncrease;
+		}
+		average = average/size;
+		float total =0;
+		for(DayLine dl: list){
+			total = total+ (dl.todayIncrease-average)*(dl.todayIncrease-average);
+		}
+		total  = total /size;
+		return Math.sqrt(total);
+	}
+	
+	private void enhanceDaylines(){
 		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
 		for(ArrayList<DayLine> dList: AllDayLines){
 			int size = dList.size();
 			for(int i=startday;i<size;i++){	
 				DayLine today = dList.get(i);
-				if(today.vol>0 && today.todayIncrease<9.89){
-					DayProfile profile = new DayProfile(today);
-					if(isProbabilityChoosen){
-						today.probabilityChoosen = judger.accept(profile);
-					}else{
-						today.isChoosen = judger.accept(profile);
+				DayLine todayM1 = dList.get(i-1);
+				DayLine todayM2 = dList.get(i-2);
+				DayLine todayM3 = dList.get(i-3);
+				
+				today.todayIncrease= Math.round((today.close-todayM1.close)*1000/todayM1.close)/10.0f;
+				today.slope3 = Math.round((today.close-todayM3.close)*1000/todayM2.close)/3;
+				today.volpercent = 0;
+				
+				float shorttermvol = 0;
+				float longtermvol = 0;
+				for(int j=0;j<20;j++){
+					float realvol = dList.get(i-j).vol;
+					if(j<3){
+						shorttermvol =  shorttermvol+realvol;
 					}
-					
+					longtermvol  = longtermvol+realvol;
+				}
+				shorttermvol/=3;
+				longtermvol/=20;
+				today.volpercent = Math.round((shorttermvol-longtermvol)*100/(shorttermvol+longtermvol));
+				
+				
+				ArrayList<DayLine> varianceList = new ArrayList<DayLine>();
+				varianceList.add(today);
+				varianceList.add(todayM1);
+				varianceList.add(todayM2);
+				
+				today.variance = this.variance(varianceList);
+				if(((today.high-today.close)+(today.open-today.low))==0){
+					today.shadowprotion = 100;
+				}else{
+					today.shadowprotion = (today.high-today.close)*100/(today.high-today.low);
 				}
 			}
 		}	
 	}
-	
-	
-	
 	
 	private void enhanceFutureIncrease(int step){
 		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
@@ -331,6 +343,104 @@ public class DayLineRegister {
 				
 			}
 		}	
+	}
+	
+	private void enhanceChoosen(Judger judger, boolean isProbabilityChoosen){
+		
+		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
+		for(ArrayList<DayLine> dList: AllDayLines){
+			int size = dList.size();
+			for(int i=startday;i<size;i++){	
+				DayLine today = dList.get(i);
+				if(today.vol>0 && today.todayIncrease<9.89){
+					DayProfile profile = new DayProfile(today);
+					if(isProbabilityChoosen){
+						today.probabilityChoosen = judger.accept(profile);
+					}else{
+						today.isChoosen = judger.accept(profile);
+					}
+					
+				}
+			}
+		}	
+	}
+	
+	///////////////////////
+	// Get Probability of a specific Chosen Stock
+	//////////////////////
+	private StatisticResult getProbabilityPosiNegiResult(){
+		float posi = 0;
+		float negi = 0;
+		
+		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
+		float achieveDaysTotal = 0;
+		for(ArrayList<DayLine> dList: AllDayLines){
+			int size = dList.size();
+			for(int i=startday;i<size;i++){	
+				DayLine today = dList.get(i);
+				if(today.probabilityChoosen && today.futureIncreaseCalculated){
+					if(today.futureSecondIncrease>=1){
+						posi=posi+1;
+					}else{
+						negi=negi+1;
+					}
+					achieveDaysTotal = achieveDaysTotal+today.achieveDays;
+				}
+				
+			}
+		}
+		float successRate = posi*100/(posi+negi);
+		float total = posi+negi;
+		return new StatisticResult(total, successRate, achieveDaysTotal/total);
+		
+	}
+	
+	private StatisticResult generateSpecProbability(Judger judger, int step){
+		this.enhanceChoosen(judger, true);
+		//this.enhanceFutureIncrease(step);
+		StatisticResult result = this.getProbabilityPosiNegiResult();
+		if(result.successRate>=0 && result.total>0){
+			//System.out.println(result);
+			System.out.print("+");
+			return result;
+		}
+		return new StatisticResult(0,0,step);
+	}
+	
+	public StatisticResult getDayLineProbility(DayLine today, float slopeRange, float volpercentRange, float varianceRange, float protionRange) {
+		JudgerUnit slope3Unit = new JudgerUnit(today.slope3-slopeRange, today.slope3+slopeRange);
+		JudgerUnit percentUnit = new JudgerUnit(today.volpercent-volpercentRange, today.volpercent+volpercentRange);
+		JudgerUnit varianceUnit = new JudgerUnit((float)today.variance-varianceRange, (float)today.variance+varianceRange);
+		JudgerUnit shadowUnit = new JudgerUnit(today.shadowprotion-protionRange, today.shadowprotion+protionRange);
+		
+		HashMap<String, JudgerUnit> rulerList = new HashMap<String, JudgerUnit>();
+		rulerList.put("slope3",slope3Unit);
+		rulerList.put("volpercent", percentUnit);
+		rulerList.put("variance",varianceUnit);
+		rulerList.put("shadowprotion",shadowUnit);
+		
+		Judger judger = new Judger(rulerList);
+		StatisticResult result = this.generateSpecProbability(judger, 5);
+		return result;
+		
+	}
+	
+	
+	
+	///////////////////////
+	// Output Choosen List and Probability
+	//////////////////////
+	
+	private void outputStringToFile(String content, String filename){
+		try {
+			PrintWriter out1 = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
+			out1.print(content);
+			out1.close();
+		} catch (EOFException e) {
+			System.err.println("End of stream");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void outputLastDayListToFile(){
@@ -374,25 +484,10 @@ public class DayLineRegister {
 		this.outputStringToFile(todayList, Config.BlockFile);
 	}
 	
-	private StatisticResult getDayLineProbility(DayLine today, float slopeRange, float volpercentRange, float varianceRange, float protionRange) {
-		JudgerUnit slope3Unit = new JudgerUnit(today.slope3-slopeRange, today.slope3+slopeRange);
-		JudgerUnit percentUnit = new JudgerUnit(today.volpercent-volpercentRange, today.volpercent+volpercentRange);
-		JudgerUnit varianceUnit = new JudgerUnit((float)today.variance-varianceRange, (float)today.variance+varianceRange);
-		JudgerUnit shadowUnit = new JudgerUnit(today.shadowprotion-protionRange, today.shadowprotion+protionRange);
-		
-		HashMap<String, JudgerUnit> rulerList = new HashMap<String, JudgerUnit>();
-		rulerList.put("slope3",slope3Unit);
-		rulerList.put("volpercent", percentUnit);
-		rulerList.put("variance",varianceUnit);
-		rulerList.put("shadowprotion",shadowUnit);
-		
-		Judger judger = new Judger(rulerList);
-		StatisticResult result = this.generateSpecProbability(judger, 5);
-		return result;
-		
-	}
 	
-
+    ///////////////////////
+	// Get first round evidence
+	//////////////////////
 	private StatisticResult getPosiNegiResult(){
 		float posi = 0;
 		float negi = 0;
@@ -419,46 +514,8 @@ public class DayLineRegister {
 		return new StatisticResult(total, successRate, achieveDaysTotal/total);
 		
 	}
-	private StatisticResult getProbabilityPosiNegiResult(){
-		float posi = 0;
-		float negi = 0;
-		
-		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
-		float achieveDaysTotal = 0;
-		for(ArrayList<DayLine> dList: AllDayLines){
-			int size = dList.size();
-			for(int i=startday;i<size;i++){	
-				DayLine today = dList.get(i);
-				if(today.probabilityChoosen && today.futureIncreaseCalculated){
-					if(today.futureSecondIncrease>=1){
-						posi=posi+1;
-					}else{
-						negi=negi+1;
-					}
-					achieveDaysTotal = achieveDaysTotal+today.achieveDays;
-				}
-				
-			}
-		}
-		float successRate = posi*100/(posi+negi);
-		float total = posi+negi;
-		return new StatisticResult(total, successRate, achieveDaysTotal/total);
-		
-	}
 	
-	public StatisticResult generateSpecProbability(Judger judger, int step){
-		this.enhanceChoosen(judger, true);
-		//this.enhanceFutureIncrease(step);
-		StatisticResult result = this.getProbabilityPosiNegiResult();
-		if(result.successRate>=0 && result.total>0){
-			//System.out.println(result);
-			System.out.print("+");
-			return result;
-		}
-		return new StatisticResult(0,0,step);
-	}
-	
-	public StatisticResult generateEvidence(boolean withRefresh, boolean fillInTable, Judger judger, int step, boolean outputLastDayListToFile){
+	private StatisticResult generateEvidence(boolean withRefresh, boolean fillInTable, Judger judger, int step, boolean outputLastDayListToFile){
 		System.out.println();
 		if(withRefresh){
 			refreshDayLineDictionary();
@@ -483,73 +540,6 @@ public class DayLineRegister {
 		
 	}
 	
-	
-	
-	
-	
-	private void enhanceDaylines(){
-		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
-		for(ArrayList<DayLine> dList: AllDayLines){
-			int size = dList.size();
-			for(int i=startday;i<size;i++){	
-				DayLine today = dList.get(i);
-				DayLine todayM1 = dList.get(i-1);
-				DayLine todayM2 = dList.get(i-2);
-				DayLine todayM3 = dList.get(i-3);
-				
-				today.todayIncrease= Math.round((today.close-todayM1.close)*1000/todayM1.close)/10.0f;
-				today.slope3 = Math.round((today.close-todayM3.close)*1000/todayM2.close)/3;
-				today.volpercent = 0;
-				
-				float shorttermvol = 0;
-				float longtermvol = 0;
-				for(int j=0;j<20;j++){
-					float realvol = dList.get(i-j).vol;
-					if(j<3){
-						shorttermvol =  shorttermvol+realvol;
-					}
-					longtermvol  = longtermvol+realvol;
-				}
-				shorttermvol/=3;
-				longtermvol/=20;
-				today.volpercent = Math.round((shorttermvol-longtermvol)*100/(shorttermvol+longtermvol));
-				
-				
-				ArrayList<DayLine> varianceList = new ArrayList<DayLine>();
-				varianceList.add(today);
-				varianceList.add(todayM1);
-				varianceList.add(todayM2);
-				
-				today.variance = this.variance(varianceList);
-				if(((today.high-today.close)+(today.open-today.low))==0){
-					today.shadowprotion = 100;
-				}else{
-					today.shadowprotion = (today.high-today.close)*100/(today.high-today.low);
-				}
-				
-				
-				
-				
-				
-			}
-		}	
-	}
-	
-	private double variance(ArrayList<DayLine> list){
-		int size = list.size();
-		float average = 0;
-		for(DayLine dl: list){
-			average = average +dl.todayIncrease;
-		}
-		average = average/size;
-		float total =0;
-		for(DayLine dl: list){
-			total = total+ (dl.todayIncrease-average)*(dl.todayIncrease-average);
-		}
-		total  = total /size;
-		return Math.sqrt(total);
-	}
-	
 	public void generateEvidence(){
 		float max = 100000;
 		float min = -100000;
@@ -570,6 +560,10 @@ public class DayLineRegister {
 		generateEvidence(true, true, judger, 5, true);
 		scan.nextLine();
 	}
+	
+	///////////////////////
+	// main
+	//////////////////////
 	public static void main(String[] args){
 		 DayLineRegister dlr = DayLineRegister.getInstance();
 		 dlr.generateEvidence();
@@ -577,7 +571,9 @@ public class DayLineRegister {
 	}
 	
 	
-	
+	///////////////////////
+	// test
+	//////////////////////
 	public void test(){
 		 float todaySlope3=60;
 		 float todayVolPercentUpper = 34;
