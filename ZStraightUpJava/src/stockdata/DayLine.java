@@ -28,6 +28,9 @@ public class DayLine {
 	public float futureSecondIncrease;
 	public float probability;
 	public float achieveDays;
+	public float coreRate;
+	public float innerNum;
+	public float outerNum;
 	
 	public float total;
 	private float setPrecise(float num){
@@ -36,8 +39,16 @@ public class DayLine {
 		return f1; 
 	}
 	public String toString(){
-		
-		return date+"  "+stockid+"  "+stockname+"      \t"+total+"\t"+setPrecise(probability)+"\t"+setPrecise(achieveDays)+"\tslope:"+setPrecise(slope3)+"\tvolpent:"+setPrecise(volpercent)+"\tvariance:"+setPrecise((float)variance)+"\tshadow:"+setPrecise(shadowprotion);
+		return date+"  "
+				+stockid+"  "
+				+stockname+"      "
+				+"\t" +setPrecise(probability)
+				+"\t"+setPrecise(achieveDays)
+				+"\t"+setPrecise(innerNum)
+				+"\t"+setPrecise(outerNum);
+				
+				
+		//return date+"  "+stockid+"  "+stockname+"      \t"+total+"\t"+setPrecise(probability)+"\t"+setPrecise(achieveDays)+"\tslope:"+setPrecise(slope3)+"\tvolpent:"+setPrecise(volpercent)+"\tvariance:"+setPrecise((float)variance)+"\tshadow:"+setPrecise(shadowprotion);
 	}
 	
 }

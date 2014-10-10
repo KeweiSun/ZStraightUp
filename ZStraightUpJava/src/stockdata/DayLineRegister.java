@@ -105,6 +105,7 @@ public class DayLineRegister {
 			ArrayList<DayLine> dList = getDayLineListByFile(dayLineFile);
 			if(dList!=null &&dList.size()>0){
 				String stockid = dList.get(0).stockid;
+				
 				System.out.print(".");
 				this.stockDictionary.put(stockid, dList);
 			}
@@ -401,7 +402,7 @@ public class DayLineRegister {
 		StatisticResult result = this.getProbabilityPosiNegiResult();
 		if(result.successRate>=0 && result.total>0){
 			//System.out.println(result);
-			System.out.print("+");
+			
 			return result;
 		}
 		return new StatisticResult(0,0,step);
@@ -454,7 +455,7 @@ public class DayLineRegister {
 			result.add(today);
 			if(today.isChoosen){
 				StatisticResult innerresult = getDayLineProbility(today,5,5,1,5);
-				StatisticResult outerresult = getDayLineProbility(today,7,7,1.4f,7);
+				StatisticResult outerresult = getDayLineProbility(today,6.4f,6.4f,1.27f,6.4f);
 				
 				float total = outerresult.total;
 				float probability = (innerresult.successRate*innerresult.total+outerresult.successRate*outerresult.total)/(innerresult.total+outerresult.total);
@@ -464,6 +465,10 @@ public class DayLineRegister {
 				today.total = probresult.total;
 				today.probability = probresult.successRate;
 				today.achieveDays = probresult.successDays;
+				today.coreRate = innerresult.total/(innerresult.total+outerresult.total);
+				today.innerNum = innerresult.total;
+				today.outerNum = outerresult.total;
+				System.out.print("+");
 			}
 		}	
 		Collections.sort(result, new DayLineComparator());
