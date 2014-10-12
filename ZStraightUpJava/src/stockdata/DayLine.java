@@ -27,6 +27,8 @@ public class DayLine {
 	public float futureIncrease;
 	public float futureSecondIncrease;
 	public float probability;
+	public float innerProb;
+	public float outerProb;
 	public float achieveDays;
 	public float coreRate;
 	public float innerNum;
@@ -42,10 +44,13 @@ public class DayLine {
 		return date+"  "
 				+stockid+"  "
 				+stockname+"      "
-				+"\t" +setPrecise(probability)
+				+"\t" +setPrecise(probability)+"%"
 				+"\t"+setPrecise(achieveDays)
-				+"\t"+setPrecise(innerNum)
-				+"\t"+setPrecise(outerNum);
+				+"\t"+Math.round(setPrecise(innerNum))
+				+"-"+Math.round(setPrecise(outerNum))
+				+"    \t" +setPrecise(innerProb)+"%"
+				
+				+"-" +setPrecise(outerProb)+"%";
 				
 				
 		//return date+"  "+stockid+"  "+stockname+"      \t"+total+"\t"+setPrecise(probability)+"\t"+setPrecise(achieveDays)+"\tslope:"+setPrecise(slope3)+"\tvolpent:"+setPrecise(volpercent)+"\tvariance:"+setPrecise((float)variance)+"\tshadow:"+setPrecise(shadowprotion);

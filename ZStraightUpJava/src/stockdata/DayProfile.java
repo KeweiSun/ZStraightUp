@@ -5,6 +5,7 @@ import java.util.Set;
 
 public class DayProfile {
 	Hashtable<String, Float> profile;
+
 	public DayProfile(DayLine dayline) {
 		profile = new Hashtable<String, Float>();
 		
