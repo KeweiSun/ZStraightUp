@@ -100,9 +100,16 @@ public class DaylineWebRefresher {
          
      	 ArrayList<DayLine> dayLines = DayLineRegister.getInstance().stockDictionary.get(dl.stockid);
      	 int linesSize = dayLines.size();
+     	 int dateIndex = dayLines.get(linesSize-1).dateIndex;
      	 if(dayLines.get(linesSize-1).date.equals(dl.date)){
+     		 dl.dateIndex = dateIndex;
      		 dayLines.set(linesSize-1, dl);
      	 }else{
+     		 dl.dateIndex = dateIndex+1;
+     		 if(dl.dateIndex>DayLineRegister.lastDayIndex){
+     			DayLineRegister.lastDayIndex = dl.dateIndex;
+     			
+     		 }
      		 dayLines.add(dl);
      	 }
 	}

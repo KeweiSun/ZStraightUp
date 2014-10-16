@@ -7,6 +7,8 @@ public class Judger {
 	HashMap<String, JudgerUnit> judgerRuler = new HashMap<String, JudgerUnit>();
 	public Judger(HashMap<String, JudgerUnit> judgerRuler){
 		this.judgerRuler = judgerRuler;
+		
+		
 	}
 	
 	public boolean accept(DayProfile profile){

@@ -13,17 +13,20 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Scanner;
 
 import stockdata.enhancer.ChoosenEnhancer;
 import stockdata.enhancer.DaylineEnhancer;
 import stockdata.enhancer.DaylineWebRefresher;
 import stockdata.enhancer.ProbabilityEnhancer;
+import bqdata.BQUtil;
 
 public class DayLineRegister {
 	private static DayLineRegister dayLineRegister=null;
-	public HashMap<String, ArrayList<DayLine>> stockDictionary = new HashMap<String, ArrayList<DayLine>> ();
-	
+	public static HashMap<String, ArrayList<DayLine>> stockDictionary = new HashMap<String, ArrayList<DayLine>> ();
+	public static Hashtable<String, Integer> dayIndexTable = new Hashtable<String, Integer>();
+	public static int lastDayIndex = 0;
 	
 	public static ChoosenEnhancer choosenEnhancer  = new ChoosenEnhancer();
 	public static DaylineEnhancer daylineEnhancer = new DaylineEnhancer();
@@ -34,14 +37,52 @@ public class DayLineRegister {
 	}
 	public static int futureDays = 5;
 	public static int startday = 30;
-	boolean withRefresh = true;
+	static boolean withRefresh = true;
 	
+	
+	private void initializeDayIndexTable() {
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(Config.shIndexFile));
+				    String s = new String();
+				    int count=0;
+				    while((s = in.readLine())!= null){
+				    	if(count<=1){
+				    		count++;
+				    		continue;
+				    	}else{
+				    		String[] lineArray = s.split("\t");
+				    		if(lineArray.length<3){
+				    			continue;
+				    		}
+				    		String date = lineArray[0];
+				    		dayIndexTable.put(date,count-2);
+				    		count++;
+				    	}
+				    }
+				    this.lastDayIndex = count-3;
+				    in.close();
+				    
+				    
+		    } catch (IOException e) {
+				e.printStackTrace();
+			}
+		return;
+	}
+	
+	public static BQUtil bqUtil;
 	public static DayLineRegister getInstance(){
 		if(dayLineRegister ==null){
 			 dayLineRegister = new DayLineRegister();
-			 dayLineRegister.initializeDayLines();	 
+			 dayLineRegister.initializeDayIndexTable();
+			 dayLineRegister.initializeDayLines();	
+			 if(withRefresh){
+					DaylineWebRefresher webrefresher = new DaylineWebRefresher();
+					webrefresher.refreshDayLineDictionary();
+					
+			 }
 			 daylineEnhancer.enhanceDaylines();
 			 daylineEnhancer.enhanceFutureIncrease(futureDays); 
+			 bqUtil = new BQUtil(0);
 		}
 		return dayLineRegister;
 	}
@@ -49,7 +90,10 @@ public class DayLineRegister {
 	///////////////////////
 	//Read Day Lines from Files 
 	//////////////////////
-	private static ArrayList<DayLine> getDayLineListByFile(File dayLineFile){
+	private int getDayIndex(String dateString){
+		return dayIndexTable.get(dateString);
+	}
+	private ArrayList<DayLine> getDayLineListByFile(File dayLineFile){
 		ArrayList<DayLine> result = new ArrayList<DayLine>();
 		if(dayLineFile.isDirectory()){
 			return result;
@@ -85,7 +129,7 @@ public class DayLineRegister {
 				    		dl.vol = Float.parseFloat(lineArray[5]);
 				    		String dateString = lineArray[0];
 				    		dl.date = dateString;
-				    		dl.dateIndex = 0;
+				    		dl.dateIndex = this.getDayIndex(dateString);
 				    		String tempStockId = "";
 				    		if(stockid.startsWith("6")){
 				    			tempStockId = "sh"+stockid;
@@ -122,30 +166,6 @@ public class DayLineRegister {
 		System.out.println();
 	}
 	
-	///////////////////////
-	//Update DayLines Through Web
-	//////////////////////
-	
-	
-	
-	///////////////////////
-	// Enhance Day Lines
-	//////////////////////
-	
-	
-	
-	
-	///////////////////////
-	// Get Probability of a specific Chosen Stock
-	//////////////////////
-	
-	
-	
-	
-	///////////////////////
-	// Output Choosen List and Probability
-	//////////////////////
-	
 	private void outputStringToFile(String content, String filename){
 		try {
 			PrintWriter out1 = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
@@ -156,6 +176,22 @@ public class DayLineRegister {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	
+	public ArrayList<DayLine> getDayLinesByOffset(int offset){
+		ArrayList<DayLine> result = new ArrayList<DayLine>();
+		Collection<ArrayList<DayLine>> AllDayLines = this.stockDictionary.values();
+		for(ArrayList<DayLine> dList: AllDayLines){
+			int size = dList.size();
+			if(size<=1) continue;
+			DayLine today = dList.get(size-1-offset);
+			//System.out.println(today.stockid+"   "+today.stockname+"  "+today.dateIndex+"   "+(this.lastDayIndex-offset));
+			if(today.dateIndex==this.lastDayIndex-offset){
+				result.add(today);
+			}
+		}
+		return result;
 	}
 	
 	private void outputLastDayListToFile(){
@@ -233,12 +269,12 @@ public class DayLineRegister {
 	
 	private StatisticResult generateEvidence(Judger judger){
 		System.out.println();
-		if(withRefresh){
+		/*if(withRefresh){
 			DaylineWebRefresher webrefresher = new DaylineWebRefresher();
 			webrefresher.refreshDayLineDictionary();
 			daylineEnhancer.enhanceDaylines();
 			daylineEnhancer.enhanceFutureIncrease(futureDays);
-		}
+		}*/
 		choosenEnhancer.enhanceChoosen(judger, false);
 		probabilityEnhancer.enhanceLastDayProbability();
 		/*if(outputLastDayListToFile){

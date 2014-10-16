@@ -14,11 +14,11 @@ public class DayLine {
 	public String stockid;
 	public String stockname;
 	
-	public float slope3;
-	public float volpercent;
-	public float todayIncrease;
-	public double variance;
-	public float shadowprotion;
+	public float slope3=0;
+	public float volpercent=0;
+	public float todayIncrease=0;
+	public double variance=0;
+	public float shadowprotion=0;
 	
 	public boolean isChoosen=false;
 	public boolean probabilityChoosen = false;
@@ -49,8 +49,8 @@ public class DayLine {
 				+"\t"+Math.round(setPrecise(innerNum))
 				+"-"+Math.round(setPrecise(outerNum))
 				+"    \t" +setPrecise(innerProb)+"%"
-				
-				+"-" +setPrecise(outerProb)+"%";
+				+"-" +setPrecise(outerProb)+"%"
+				+"\t"+DayLineRegister.bqUtil.getStockBQWeight(stockid);
 				
 				
 		//return date+"  "+stockid+"  "+stockname+"      \t"+total+"\t"+setPrecise(probability)+"\t"+setPrecise(achieveDays)+"\tslope:"+setPrecise(slope3)+"\tvolpent:"+setPrecise(volpercent)+"\tvariance:"+setPrecise((float)variance)+"\tshadow:"+setPrecise(shadowprotion);

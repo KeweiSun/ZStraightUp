@@ -32,8 +32,34 @@ public class DaylineEnhancer {
 				DayLine todayM1 = dList.get(i-1);
 				DayLine todayM2 = dList.get(i-2);
 				DayLine todayM3 = dList.get(i-3);
+				boolean continueFlag = false;
+				if(today.close==0){
+					continueFlag = true;
+				}
+				if(today.dateIndex-todayM3.dateIndex>5){
+					continueFlag = true;
+				}
+				
 				
 				today.todayIncrease= Math.round((today.close-todayM1.close)*1000/todayM1.close)/10.0f;
+				for(int j=i-3;j<=i;j++){
+					if(dList.get(j).todayIncrease>11||dList.get(j).todayIncrease<-11){
+						continueFlag = true;
+					}
+				}
+				/*if(today.close==0||today.todayIncrease>11||today.todayIncrease<-11){
+					if(today.close!=0){
+						System.out.println(today+"  "+today.todayIncrease+"    "+today.dateIndex+"   "+todayM1.dateIndex);
+						System.out.println();
+					}
+					continueFlag = true;
+					
+				}*/
+				if(continueFlag){
+					today.todayIncrease = 0;
+					continue;
+				}
+				
 				today.slope3 = Math.round((today.close-todayM3.close)*1000/todayM2.close)/3;
 				today.volpercent = 0;
 				
