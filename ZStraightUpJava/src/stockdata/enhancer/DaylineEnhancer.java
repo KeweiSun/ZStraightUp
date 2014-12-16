@@ -3,6 +3,7 @@ package stockdata.enhancer;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import stockdata.Config;
 import stockdata.DayLine;
 import stockdata.DayLineRegister;
 
@@ -42,6 +43,24 @@ public class DaylineEnhancer {
 				
 				
 				today.todayIncrease= Math.round((today.close-todayM1.close)*1000/todayM1.close)/10.0f;
+				float totalvol = 0;
+				for(int j=i-9;j<=i;j++){
+					DayLine tempDay = dList.get(j);
+					totalvol = totalvol+tempDay.vol;
+				}
+				float avgvol = totalvol/10;
+				float volrate = today.vol/avgvol;
+				today.strength = today.todayIncrease/volrate;
+				
+				if(today.stockid.equalsIgnoreCase(Config.indexFilename)){
+					/*float overall2increase = Math.round((today.close-todayM2.close)*1000/todayM2.close)/20.0f;
+					float overall2increaseM1 = Math.round((todayM1.close-todayM3.close)*1000/todayM3.close)/20.0f;
+					DayLineRegister.overallIncreaseTable.put(today.date, overall2increase-overall2increaseM1);
+					System.out.println(today.date+"    "+overall2increase+"   "+overall2increaseM1+"   "+(overall2increase-overall2increaseM1));
+					*/
+					DayLineRegister.overallIncreaseTable.put(today.date, today.strength);
+					
+				}
 				for(int j=i-3;j<=i;j++){
 					if(dList.get(j).todayIncrease>11||dList.get(j).todayIncrease<-11){
 						continueFlag = true;
@@ -88,6 +107,9 @@ public class DaylineEnhancer {
 				}else{
 					today.shadowprotion = (today.high-today.close)*100/(today.high-today.low);
 				}
+				
+				
+				today.jump = (today.low-todayM1.high)/todayM1.close;
 			}
 		}	
 	}
@@ -124,6 +146,20 @@ public class DaylineEnhancer {
 					today.achieveDays = days;
 				}
 				
+			}
+		}	
+	}
+	
+	
+	
+	public void enhanceOverallIncrease(){
+		Collection<ArrayList<DayLine>> AllDayLines = DayLineRegister.stockDictionary.values();
+		for(ArrayList<DayLine> dList: AllDayLines){
+			int size = dList.size();
+			for(int i=DayLineRegister.startday;i<size;i++){	
+				DayLine today = dList.get(i);
+				//today.overallIncrease = DayLineRegister.overallIncreaseTable.get(today.date);
+				today.overallStrength = DayLineRegister.overallIncreaseTable.get(today.date);
 			}
 		}	
 	}

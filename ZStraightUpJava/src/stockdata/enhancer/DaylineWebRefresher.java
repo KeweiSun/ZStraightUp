@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
+import stockdata.Config;
 import stockdata.DayLine;
 import stockdata.DayLineRegister;
 
@@ -24,12 +25,20 @@ public class DaylineWebRefresher {
 		String idListString = "";
 		for(int i=0;i<stockListArray.length;i++){
 			if(i>0&&(i%100==0||i==stockListArray.length-1)){
-				idListString = idListString+stockListArray[i];
+				String tempId = stockListArray[i];
+				if(tempId.equalsIgnoreCase(Config.indexFilename)){
+					tempId = "sh000001";
+				}
+				idListString = idListString+tempId;
 				String url = "http://hq.sinajs.cn/list="+idListString;
 				result.add(url);
 				idListString = "";
 			}else{
-				idListString = idListString+stockListArray[i]+",";
+				String tempId = stockListArray[i];
+				if(tempId.equalsIgnoreCase(Config.indexFilename)){
+					tempId = "sh000001";
+				}
+				idListString = idListString+tempId+",";
 			}
 		
 		}
@@ -95,6 +104,10 @@ public class DaylineWebRefresher {
      	 dl.close = close;
      	 dl.amount = amount;
      	 dl.vol = vol;
+     	 if(symbol.equalsIgnoreCase("sh000001")){
+     	 	 System.out.println("in");
+     		 symbol = Config.indexFilename;
+     	 }
      	 dl.stockid = symbol;
      	 dl.stockname = data.split(",")[0];
          

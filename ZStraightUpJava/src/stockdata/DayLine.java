@@ -19,6 +19,10 @@ public class DayLine {
 	public float todayIncrease=0;
 	public double variance=0;
 	public float shadowprotion=0;
+	//public float overallIncrease =0;
+	public float strength = 0;
+	public float overallStrength = 0;
+	public float jump = -1;
 	
 	public boolean isChoosen=false;
 	public boolean probabilityChoosen = false;
@@ -41,11 +45,15 @@ public class DayLine {
 		return f1; 
 	}
 	public String toString(){
-		return date+"  "
+		return 	
+				date+"  "
 				+stockid+"  "
 				+stockname+"      "
+				//+"\t" +setPrecise(overallIncrease)+"%"
+				//+"\t" +setPrecise(overallStrength)+"%"
+				//+"\t" +setPrecise(strength)+"%"
 				+"\t" +setPrecise(probability)+"%"
-				+"\t"+setPrecise(achieveDays)
+				//+"\t"+setPrecise(achieveDays)
 				+"\t"+Math.round(setPrecise(innerNum))
 				+"-"+Math.round(setPrecise(outerNum))
 				+"    \t" +setPrecise(innerProb)+"%"

@@ -13,6 +13,10 @@ public class DayProfile {
 		profile.put("volpercent", dayline.volpercent);
 		profile.put("variance", (float)dayline.variance);
 		profile.put("shadowprotion", dayline.shadowprotion);
+		//profile.put("overallIncrease", dayline.overallIncrease);
+		profile.put("strength", dayline.strength);
+		profile.put("overallStrength", dayline.overallStrength);
+		profile.put("jump", dayline.jump);
 	}
 	public DayProfile(Hashtable<String, Float> profile) {
 		this.profile = profile;

@@ -16,6 +16,7 @@ public class Judger {
 		for(String key:keys){
 			JudgerUnit ruler = judgerRuler.get(key);
 			float value = profile.getNumberByKey(key);
+		
 			if(value < ruler.lower){
 				return false;
 			}else if(value>ruler.upper){

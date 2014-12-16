@@ -52,17 +52,30 @@ public class ProbabilityEnhancer {
 		return new StatisticResult(0,0,step);
 	}
 	
-	private StatisticResult getDayLineProbility(DayLine today, float slopeRange, float volpercentRange, float varianceRange, float protionRange) {
+	private StatisticResult getDayLineProbility(DayLine today, 
+												float slopeRange, 
+												float volpercentRange, 
+												float varianceRange, 
+												float protionRange, 
+												float oiRange,
+												float strengthRange,
+												float overallStrengthRange) {
 		JudgerUnit slope3Unit = new JudgerUnit(today.slope3-slopeRange, today.slope3+slopeRange);
 		JudgerUnit percentUnit = new JudgerUnit(today.volpercent-volpercentRange, today.volpercent+volpercentRange);
 		JudgerUnit varianceUnit = new JudgerUnit((float)today.variance-varianceRange, (float)today.variance+varianceRange);
 		JudgerUnit shadowUnit = new JudgerUnit(today.shadowprotion-protionRange, today.shadowprotion+protionRange);
+		//JudgerUnit overallIncreaseUnit = new JudgerUnit(today.overallIncrease-oiRange, today.overallIncrease+oiRange);
+		JudgerUnit strengthUnit = new JudgerUnit(today.strength-strengthRange, today.strength+strengthRange);
+		JudgerUnit overallStrengthUnit = new JudgerUnit(today.overallStrength-overallStrengthRange, today.overallStrength+overallStrengthRange);
 		
 		HashMap<String, JudgerUnit> rulerList = new HashMap<String, JudgerUnit>();
 		rulerList.put("slope3",slope3Unit);
 		rulerList.put("volpercent", percentUnit);
 		rulerList.put("variance",varianceUnit);
 		rulerList.put("shadowprotion",shadowUnit);
+		rulerList.put("strength",strengthUnit);
+		rulerList.put("overallStrength",overallStrengthUnit);
+		rulerList.put("jump", new JudgerUnit(0.0001f, 100));
 		
 		Judger judger = new Judger(rulerList);
 		StatisticResult result = this.generateSpecProbability(judger, 5);
@@ -70,12 +83,16 @@ public class ProbabilityEnhancer {
 		
 	}
 	public void enhanceDayLineProbability(DayLine today){
-		StatisticResult innerresult = getDayLineProbility(today,5,5,1,5);
-		StatisticResult outerresult = getDayLineProbility(today,6.4f,6.4f,1.27f,6.4f);
+		StatisticResult innerresult = getDayLineProbility(today,5.6f,5.6f,2.2f,5.6f, 0.3f, 1.0f, 0.56f);
+		StatisticResult outerresult = getDayLineProbility(today,6.4f,6.4f,2.5f,6.4f, 0.4f, 1.15f, 0.64f);
 		
 		float total = outerresult.total;
-		float probability = (innerresult.successRate*innerresult.total+outerresult.successRate*outerresult.total)/(innerresult.total+outerresult.total);
-		float achieveDays = (innerresult.successDays*innerresult.total+outerresult.successDays*outerresult.total)/(innerresult.total+outerresult.total);
+		float probability = 0;
+		float achieveDays = 0;
+		if(innerresult.total+outerresult.total>0){
+			probability = (innerresult.successRate*innerresult.total+outerresult.successRate*outerresult.total)/(innerresult.total+outerresult.total);
+			achieveDays = (innerresult.successDays*innerresult.total+outerresult.successDays*outerresult.total)/(innerresult.total+outerresult.total);
+		}
 		StatisticResult probresult = new StatisticResult(total, probability, achieveDays);
 		
 		today.total = probresult.total;

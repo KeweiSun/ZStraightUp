@@ -87,8 +87,12 @@ public class BQUtil {
 		 ArrayList<BQInfo> bqresultList = new ArrayList<BQInfo>();
 		 bqresultList.addAll(bqlist);
 		 Collections.sort(bqresultList, new BQComparator());
+		 int temp_count=1;
 		 for(BQInfo bq: bqresultList){
-			 System.out.println(bq);
+			 if(temp_count<=10){
+				 System.out.println(temp_count+"  "+bq);
+			 }
+			 temp_count++;
 		 }
 		 rf.close();
 		 

@@ -26,6 +26,7 @@ public class DayLineRegister {
 	private static DayLineRegister dayLineRegister=null;
 	public static HashMap<String, ArrayList<DayLine>> stockDictionary = new HashMap<String, ArrayList<DayLine>> ();
 	public static Hashtable<String, Integer> dayIndexTable = new Hashtable<String, Integer>();
+	public static Hashtable<String, Float> overallIncreaseTable = new Hashtable<String, Float>();
 	public static int lastDayIndex = 0;
 	
 	public static ChoosenEnhancer choosenEnhancer  = new ChoosenEnhancer();
@@ -35,7 +36,7 @@ public class DayLineRegister {
 	private DayLineRegister(){
 		
 	}
-	public static int futureDays = 5;
+	public static int futureDays = 2;
 	public static int startday = 30;
 	static boolean withRefresh = true;
 	
@@ -82,6 +83,7 @@ public class DayLineRegister {
 			 }
 			 daylineEnhancer.enhanceDaylines();
 			 daylineEnhancer.enhanceFutureIncrease(futureDays); 
+			 daylineEnhancer.enhanceOverallIncrease();
 			 bqUtil = new BQUtil(0);
 		}
 		return dayLineRegister;
@@ -131,7 +133,7 @@ public class DayLineRegister {
 				    		dl.date = dateString;
 				    		dl.dateIndex = this.getDayIndex(dateString);
 				    		String tempStockId = "";
-				    		if(stockid.startsWith("6")){
+				    		if(stockid.startsWith("6")||stockid.startsWith("999")){
 				    			tempStockId = "sh"+stockid;
 				    		}else{
 				    			tempStockId = "sz"+stockid;
@@ -154,13 +156,16 @@ public class DayLineRegister {
 	public void initializeDayLines(){
 		File bsDir = new File(Config.dayLineBSDir);
 		File[] fileList = bsDir.listFiles();
+		int temp_count=0;
 		for(File dayLineFile: fileList){
 			ArrayList<DayLine> dList = getDayLineListByFile(dayLineFile);
 			if(dList!=null &&dList.size()>0){
 				String stockid = dList.get(0).stockid;
-				
-				System.out.print(".");
+				if(temp_count%100==0){
+					System.out.print(".");
+				}
 				this.stockDictionary.put(stockid, dList);
+				temp_count++;
 			}
 		}
 		System.out.println();
@@ -218,12 +223,15 @@ public class DayLineRegister {
 			}
 		}
 		Collections.sort(result, new DayLineComparator());
-		
+		String outputResult = "";
+		int temp_count = 1;
 		for(DayLine today: result){
 			
-			if(today.isChoosen&&today.probability>=75){
+			if(today.isChoosen/*&&today.outerNum>=30&&temp_count<=20*//*&&today.innerProb>=75*/){
 				System.out.println();
-				System.out.println(today);
+				System.out.println(temp_count+"\t"+today);
+				outputResult = outputResult+temp_count+"\t"+today+"\r\n\r\n";
+				
 				String tempString ="";
 				if(today.stockid.startsWith("sh")){
 					tempString = today.stockid.replace("sh", "1");
@@ -231,8 +239,10 @@ public class DayLineRegister {
 					tempString = today.stockid.replace("sz", "0");
 				}
 				todayList=todayList+tempString+"\n";
+				temp_count++;
 			}
-		}	
+		}
+		this.outputStringToFile(outputResult, "result.rst");
 		this.outputStringToFile(todayList, Config.BlockFile);
 	}
 	
@@ -251,7 +261,8 @@ public class DayLineRegister {
 			for(int i=startday;i<size;i++){	
 				DayLine today = dList.get(i);
 				if(today.isChoosen && today.futureIncreaseCalculated){
-					if(today.futureSecondIncrease>=1){
+					//if(today.futureSecondIncrease>=1){
+					if(today.futureIncrease>=1){
 						posi=posi+1;
 					}else{
 						negi=negi+1;
@@ -269,17 +280,10 @@ public class DayLineRegister {
 	
 	private StatisticResult generateEvidence(Judger judger){
 		System.out.println();
-		/*if(withRefresh){
-			DaylineWebRefresher webrefresher = new DaylineWebRefresher();
-			webrefresher.refreshDayLineDictionary();
-			daylineEnhancer.enhanceDaylines();
-			daylineEnhancer.enhanceFutureIncrease(futureDays);
-		}*/
+		
 		choosenEnhancer.enhanceChoosen(judger, false);
 		probabilityEnhancer.enhanceLastDayProbability();
-		/*if(outputLastDayListToFile){
-			this.outputLastDayListToFile();
-		}*/
+		
 		StatisticResult result = this.getPosiNegiResult();
 		if(result.successRate>=0 && result.total>0){
 			System.out.println("\n"+result);
@@ -293,16 +297,30 @@ public class DayLineRegister {
 		float min = -100000;
 		
 		float todaySlope3=20;
-		float todayVolPercentUpper = 30;
+		float todayVolPercentUpper = 20;//-30
 		//float variance = 0;
-		float shadowprotion=30;
+		float shadowprotion=30; //30+
 		
 		HashMap<String, JudgerUnit> rulerList = new HashMap<String, JudgerUnit>();
 		
 		rulerList.put("slope3",new JudgerUnit(todaySlope3, max));
 		rulerList.put("volpercent", new JudgerUnit(min,todayVolPercentUpper));
 		rulerList.put("variance",new JudgerUnit(min, max));
+		//rulerList.put("overallIncrease",new JudgerUnit(min, max));
 		rulerList.put("shadowprotion",new JudgerUnit(shadowprotion, max));
+		rulerList.put("strength",new JudgerUnit(min, max));
+		rulerList.put("overallStrength",new JudgerUnit(min, max));
+		
+		/*rulerList.put("slope3",new JudgerUnit(todaySlope3, max));
+		rulerList.put("volpercent", new JudgerUnit(min,max));
+		rulerList.put("variance",new JudgerUnit(min, max));
+		//rulerList.put("overallIncrease",new JudgerUnit(min, max));
+		rulerList.put("shadowprotion",new JudgerUnit(min, max));
+		rulerList.put("strength",new JudgerUnit(min, max));
+		rulerList.put("overallStrength",new JudgerUnit(min, max));*/
+		
+		
+		rulerList.put("jump", new JudgerUnit(0.0001f, max));
 
 		Judger judger = new Judger(rulerList);
 		generateEvidence(judger);
